@@ -1,9 +1,9 @@
 /*
 TRIESTE_advanceSQL
-Database DEsign Lab Exercise Advanced SQL Part 1
+Database Design Lab Exercise Advanced SQL Part 1
 Dr. Steven C. LINdo 
-NYiT – New York INstitute of Technology 
-CSCi 760 - Database Systems  SprINg 2022 
+NYIT – New York Institute of Technology 
+CSCI 760 - Database Systems  Spring 2022 
 */
 
 use nyit_classicmodels;
@@ -282,13 +282,16 @@ SELECT
     ORDER BY YEAR(paymentDate) DESC, SUM(p.amount) DESC
 ) SELECT * FROM CTE 
 
--- step 2 
+-- step 2 part 1
 use nyit_classicmodels; 
 DROP PROCEDURE IF EXISTS trieste_GetBonus; 
 DELIMITER $$
 CREATE PROCEDURE trieste_GetBonus()
 BEGIN
 CREATE TEMPORARY TABLE BonusTable (Employee_Num INT, Employee_LastName varchar(100), Bonus_2003 NUMERIC(18,2), Bonus_2004 NUMERIC(18,2), Bonus_2005 NUMERIC(18,2));	
+SET @bonus2003bump = 2500;
+SET @bonus2004bump = 2500;
+SET @bonus2005bump = 2500;
 INSERT INTO BonusTable
 WITH CTE AS (
 SELECT 
@@ -318,6 +321,18 @@ GROUP BY
 Employee_Num, Employee_LastName, Bonus_2003, Bonus_2004, Bonus_2005 
 ) SELECT Employee_Num, Employee_LastName, Bonus_2003, Bonus_2004, Bonus_2005 
 	FROM CTE2;
+SELECT @max03bonus := (MAX(Bonus_2003)) FROM BonusTable;
+SELECT @max04bonus := (MAX(Bonus_2004)) FROM BonusTable;
+SELECT @max05bonus := (MAX(Bonus_2005)) FROM BonusTable;
+UPDATE BonusTable 
+	SET Bonus_2003 = @max03bonus + @bonus2003bump
+WHERE Bonus_2003 = @max03bonus;
+UPDATE BonusTable 
+	SET Bonus_2004 = @max04bonus + @bonus2004bump
+WHERE Bonus_2004 = @max04bonus;
+UPDATE BonusTable 
+	SET Bonus_2005 = @max05bonus + @bonus2005bump
+WHERE Bonus_2005 = @max05bonus;
 SELECT * 
 FROM BonusTable;
 DROP TABLE IF EXISTS BonusTable;
@@ -326,7 +341,16 @@ DELIMITER ;
 -- test 
 call trieste_GetBonus;
 
--- part 2 
+
+
+--part 2 
+use nyit_classicmodels; 
+DROP PROCEDURE IF EXISTS trieste_GetBonusByEmpNum
+DELIMITER $$
+CREATE PROCEDURE trieste_GetBonusByEmpNum(
+	IN f_empNum INT
+)
+BEGIN
 WITH CTE AS (
 SELECT 
         e.employeeNumber AS "Employee_Num", 
@@ -345,8 +369,13 @@ SELECT
 CTE2 AS (
 SELECT *
 FROM CTE
-WHERE Employee_Num = 1612 AND Sales_Year = 2004
-) SELECT * FROM CTE2
+WHERE Employee_Num = f_empNum; 
+) SELECT * FROM CTE2;
+END$$
+DELIMITER ;
+
+-- test above with 'CALL trieste_GetBonusByEmpNum(1612)';
+CALL trieste_GetBonusByEmpNum(1612);
  
  
  -- end work Robert Trieste  
